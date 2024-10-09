@@ -1,1 +1,76 @@
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.safari.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import subprocess
 
+# Function to show macOS notification using subprocess
+def show_popup_notification(url):
+    title = "Amazon Item is Available!"
+    message = "The item you were waiting for is now available. Click here to check it out!"
+    
+    # Construct the AppleScript to display the notification and open the URL in Safari
+    script = f'''
+    display notification "{message}" with title "{title}" sound name "default"
+    '''
+
+    # Show the macOS notification
+    subprocess.run([
+        "osascript", "-e", script
+    ])
+    
+    # Open URL in Safari (or default browser) after displaying the notification
+    subprocess.run([
+        "osascript", "-e",
+        f'tell application "Safari" to open location "{url}"'
+    ])
+    
+    print(f"Pop-up notification shown and URL ({url}) opened!")
+
+# Initialize Safari driver
+safari_service = Service('/usr/bin/safaridriver')
+driver = webdriver.Safari(service=safari_service)
+
+# Maximize the browser window to full screen
+driver.maximize_window()
+
+# List of URLs of the products
+urls = ["https://amzn.eu/d/5K2g17P", "https://www.amazon.co.uk/dp/B0DCZ2HK9R"]
+
+# Dictionary to track the availability status of each item
+availability_flags = {url: False for url in urls}
+
+def check_availability():
+    global availability_flags
+    
+    for url in urls:
+        driver.get(url)
+
+        try:
+            # Wait until the product page loads and check if 'Add to Basket' button is available
+            WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.ID, "add-to-cart-button"))
+            )
+            
+            # If item is available and wasn't previously available, show notification
+            if not availability_flags[url]:
+                print(f"Item at {url} became available!")
+                show_popup_notification(url)
+                availability_flags[url] = True  # Update the flag
+            else:
+                print(f"Item at {url} is still available.")
+
+        except Exception as e:
+            # If item is not available
+            if availability_flags[url]:
+                print(f"Item at {url} is no longer available.")
+                availability_flags[url] = False  # Reset the flag
+            else:
+                print(f"Item at {url} is not available at the moment.")
+
+# Continuously check for availability every 5 seconds
+while True:
+    check_availability()
+    time.sleep(5)  # Wait for 5 seconds before checking again
