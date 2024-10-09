@@ -37,7 +37,7 @@ driver = webdriver.Safari(service=safari_service)
 driver.maximize_window()
 
 # List of URLs of the products
-urls = ["https://amzn.eu/d/5K2g17P", "https://www.amazon.co.uk/dp/B0DCZ2HK9R"]
+urls = ["url", "url"]
 
 # Dictionary to track the availability status of each item
 availability_flags = {url: False for url in urls}
